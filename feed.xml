@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>r7kamura blog</title>
+  <subtitle>marking down about tech.</subtitle>
+  <id>http://r7kamura.github.io/</id>
+  <link href="http://r7kamura.github.io/"/>
+  <link href="http://r7kamura.github.io/feed.xml" rel="self"/>
+  <updated>2013-11-18T00:00:00+00:00</updated>
+  <author>
+    <name>r7kamura</name>
+  </author>
+  <entry>
+    <title>Sitespec</title>
+    <link rel="alternate" href="http://r7kamura.github.io/2013/11/18/sitespec.html"/>
+    <id>http://r7kamura.github.io/2013/11/18/sitespec.html</id>
+    <published>2013-11-18T00:00:00+00:00</published>
+    <updated>2013-11-18T03:45:42+00:00</updated>
+    <author>
+      <name>r7kamura</name>
+    </author>
+    <content type="html">[Sitespec](https://github.com/r7kamura/sitespec)という静的サイト生成ツールを作り、このブログを移行した。
+
+## Sitespec
+Sitespecは、Webアプリとテストから静的サイトを生成するためのツール。
+WebアプリにはRackを、テストにはRSpecを使う。
+Rackを使った適当なWebアプリを用意し、
+RSpecでHTTPリクエストを発行するように記述したテストを実行すると、
+レスポンスの内容から静的ファイルが生成されるという仕組みになっている。
+参考までに紹介しておくと、静的サイト生成ツールには他に
+[Middleman](http://middlemanapp.com/)や[Octopress](http://octopress.org/)、[Movable Type](http://www.movabletype.jp/) などが存在する。
+
+## Middleman's Imperialism
+このブログも、最初の7日間は[Middlemanを利用して作られていた](http://r7kamura.github.io/2013/11/10/hello-world.html)。
+逆に言うと、7日間しか我慢できなかったということになる。
+Middlemanの嫌いなところは、何をするにもMiddlemanに従う必要があることだった。
+Middlemanを使うには、Middlemanのチュートリアルを読み、
+Middlemanの初期化コマンドでファイル群を生成し、
+MiddlemanのDSLでconfig.ruを編集し、
+Middlemanのコマンドでファイルをビルドする必要がある。
+何をするにも学習コストが発生し、他に活かせる知識が得られる訳でも無い。
+ドキュメントに書いていない知識やルールが沢山あり、
+Middleman自体を内側から変えようとしても、実装は15万行もある。
+こういった状況でMiddlemanを使い続けることに嫌気が差し、
+既存のツールを組み合わせて小さな独立したプログラムを作ることにした。
+これがSitespecの始まりだ。
+
+## Why Rack and RSpec?
+どうしてRackとRSpecなのか、という疑問に答えておきたい。
+エディタにしろ言語にしろ、
+結局選ぶ理由は「好きだから」という言葉に尽きるのだけど、
+いざと言うとき偉い人に説明する用に合理的な理由を述べておく。
+Sitespecでは「再利用できること」を重視した。
+全く新しいものを作るのではなく、既に在るものを再利用して作る。
+Sitespecの為につくったものが他でも再利用できる。
+他の場所でつくられたものをSitespecに再利用できる。
+Sitespecを使って得られた知識を他の場所でも再利用できる。
+そういう風に再利用性の高いものを作ろうとした結果、
+WebアプリにRack、ビルドにRSpecという選択になった。
+どちらも広く使われていて、多くの周辺技術が開発されている。
+
+## Stillness in motion
+静的サイトというのは、動的サイトのある状態を部分的に切り取ったものに過ぎない。
+そういう考えのもと、動的サイトも静的サイトも同じように作れるようにすることで、
+これまでRailsやSinatraでWebアプリを作ってきた人が同じ知識を使い回せるようになる。
+逆も然りで、Sitespec用に覚えた知識は他でも使い回すことができる。
+知識だけでなく道具もそうで、
+Rack用に作られた数々のmiddlewareやアプリを再利用することができる。
+例えばこのブログには、Rackの上に作られたSinatra、
+の更に上に作られたPadrinoというフレームワークを利用していて、
+リクエストの処理や、URLの変換、HTMLの描画等で力を借りている。
+またRack用に作られたRack::LiveReloadというmiddlewareを使って、
+記事更新時に自動でブラウザが更新されるようになっている。
+
+## RSpec as a Command-Line Tool
+RSpecを採用するのはかなり面白い判断だったと思う。
+これが上手くいくかどうかは自分でもよく分からなかったが、
+面白そうという期待に賭けてみたかったので採用した。
+RSpecの副産物として何かが生成されるという考え方は、
+APIのテストからAPIドキュメントを生成する[autodoc](https://github.com/r7kamura/autodoc)にも見られる。
+SitespecにおけるRSpecは、記述性の高いDSLを提供する、よく出来たコマンドラインツールという位置付けだ。
+決して最高とは言えないが、そこそこに人間が読める形式の仕様書が記述でき、
+便利なテスト実行ツールと、出力形式や実行計画を変更するためのオプションが備わっている。
+Sitespecでは、RSpecをビルドのためのコマンドラインツールとして使い、
+フォーマッタの仕組みを使い独自の出力形式に変更することで良い感じの見た目を提供している。
+テストツールとしての機能も当然利用しており、
+例えばWebアプリから4xxや5xx系のエラーコードが返ってくるとそこでテストが失敗し、
+ビルドが終了するようになっている。
+またレスポンスの中身を更にテストすることも出来る。
+例えば、typoやリンク切れが無いか調べたり、W3CのLintに通すといったことも可能だろう。
+更に進んだ使い方として、Travis CIでテストを実行し、
+成功すればビルドした結果をGitHub PagesにPushして公開、
+失敗すればメールで通知するといった使い方も可能だ。
+
+```
+$ rspec
+Build started...
+
+✔ build/2013/11/10/hello-world.html
+✔ build/2013/11/15/happy-pull-request.html
+✔ build/images/favicon.ico
+✔ build/images/r7kamura.png
+✔ build/images/2013-11-10-hello-world/build-pipeline.png
+✔ build/images/2013-11-15-happy-pull-request/pull-request.png
+✔ build/index.html
+✔ build/stylesheets/all.css
+✔ build/feed.xml
+
+Build finished with 9 files in 0.28465 seconds.
+```
+
+## Minimal Viable Program
+Sitespecを利用した、最も単純で実行可能なプログラムの例を紹介する。
+どんなリクエストが来ても"hello world"という文字列を返すRackアプリと、
+GET /index.html というHTTPリクエストを発行するテストを書いた。
+このテストを実行すると、buildディレクトリ以下にファイルが生成される。
+/index.htmlにHTTPリクエストを発行することで、
+build/index.htmlが生成され、
+Rackアプリが返す"hello world"という文字列が書き込まれる。
+
+```ruby
+# example_spec.rb
+require "sitespec"
+
+Sitespec.configuration.application = -&gt;(env) do
+  [200, {}, ["hello world\n"]]
+end
+
+describe "This site" do
+  include Sitespec
+
+  it "provides the following files" do
+    get "/index.html"
+  end
+end
+```
+
+```
+$ rspec example_spec.rb
+Build started...
+
+✔ build/index.html
+
+Build finished with 1 files in 0.00147 seconds.
+$ cat build/index.html
+hello world
+```
+
+## 今回はここまで
+Sitespecという静的サイト生成ツールについて、
+Middlemanから移行した背景と、RackとRSpecを採用した理由、そして簡単なサンプルコードを紹介した。
+Sitespecは、テストから静的サイトを生成すれば面白いのではという考えのもとで生まれた、
+それ自身は200行かそこらの小さなプログラムに過ぎないが、
+組み合わせ次第でもっと面白いことが実現できるようになると思う。
+最後に、Sitespecのソースコードと、使用例としてこのブログのソースコードを載せておく。
+
+* [r7kamura/sitespec](https://github.com/r7kamura/sitespec)
+* [r7kamura/r7kamura.github.io](https://github.com/r7kamura/r7kamura.github.io)
+</content>
+  </entry>
+  <entry>
+    <title>Happy Pull Request</title>
+    <link rel="alternate" href="http://r7kamura.github.io/2013/11/15/happy-pull-request.html"/>
+    <id>http://r7kamura.github.io/2013/11/15/happy-pull-request.html</id>
+    <published>2013-11-15T00:00:00+00:00</published>
+    <updated>2013-11-18T03:45:42+00:00</updated>
+    <author>
+      <name>r7kamura</name>
+    </author>
+    <content type="html">![](/images/2013-11-15-happy-pull-request/pull-request.png)
+
+「[おれはブログをGitHubに置いていたと思ったらPull Requestをもらっていた](https://github.com/r7kamura/r7kamura.github.io/pulls?direction=desc&amp;page=1&amp;sort=created&amp;state=closed)」
+
+おれは今オープンソースのブログをほんのちょっぴりだが体験した。
+いや、体験したというよりはまったく理解を超えていたのだが。
+何を言っているか分からないと思うが、おれも何をされたのか分からなかった。
+ホスティングサイトだとか、バージョン管理だとか、そんなチャチなもんじゃ断じてない、
+もっと恐ろしいものの片鱗を味わった。
+
+## 人最高
+自分のプロダクトに対してPull Requestを生まれて初めてもらったのは、確か去年の夏のことだった。
+当時すごく嬉しかったことは今でも覚えていて、
+それは「黒い画面のログをブラウザに流せるようにして、しかも工夫次第で音とか流せるようにしました、ゲラゲラ」
+みたいなプロジェクトで、それをわざわざ拙い英語を見てインストールしてくれて、
+しかも僕のミスで何か不具合があって動かなくて、それを原因調べて、直して、
+こうやって直せるっぽいのでどうですか、という風に提案してきてくれて、
+人すごい、人最高、インターネット最高、インターネット、インタッーネット!!!!!!!!、
+といった感じでとにかく人間の善性とインターネットに可能性を感じていた。
+
+## 貢献
+時間の流れというのは恐ろしいもので、新卒として入社した職場ではGitHub Enterpriseが導入され、
+とにかく強くならなければ、力を持たなければならないという一心で
+全てのPull Requestを[読み続け](https://speakerdeck.com/r7kamura/how-to-grow-up-in-cookpad)、
+それが具体的に何を指すのかも、ほとんど脅迫的とも言えるようなその思いがどこから湧いてくるのかも分からず、
+僕はただ働き続け、気付けば日々弾力を失っていく心。
+Pull Requestというものを日常業務として淡々とこなすようになっていた中で、
+しかしてこのブログに対するPull Requestは、
+かつての人間の善性とインターネットに対する可能性を思い起こさせるに足るものだった。
+無機質にインターネットにのめり込むうち、
+人間の行動原理を好奇心という側面でしか捉えられないようになっていたけれど、
+誰かに貢献したいという気持ちが人間を動かすこともある。
+少なくとも今の自分は、とにかくインターネットに貢献したいという気持ちで溢れている。
+</content>
+  </entry>
+  <entry>
+    <title>Hello world</title>
+    <link rel="alternate" href="http://r7kamura.github.io/2013/11/10/hello-world.html"/>
+    <id>http://r7kamura.github.io/2013/11/10/hello-world.html</id>
+    <published>2013-11-10T00:00:00+00:00</published>
+    <updated>2013-11-18T03:45:42+00:00</updated>
+    <author>
+      <name>r7kamura</name>
+    </author>
+    <content type="html">技術関係の小ネタを書くために新しくブログを作った。
+
+## ブログどれ使うか問題
+[tumblr](http://tumblr.com)、
+[medium](https://medium.com/)、
+[hatenablog](http://hatenablog.com)、
+[scriptogr.am](http://scriptogr.am) などを検討した後、
+今回は[Middleman](http://middlemanapp.com/)とGitHub Pagesを利用することにした。
+tumblrは、手軽に使えて、無料で広告が出ず、HTMLテンプレートは全て自分で編集できるが、記事編集画面が少し使いづらい。
+mediumはオシャレだけど、表参道みたいな息苦しさがある。
+はてなブログは、はてなスターや通知、編集画面が便利で最高だけど、
+無料だと広告が出るし、HTMLテンプレート全体を自由に編集できない。
+scriptogr.amはDropboxに記事を置くと公開されるという仕組みが面白いけれど、まだBeta版品質という感じがする。
+
+## Middlemanについて
+MiddlemanはWebサイトに必要な静的ファイルを生成するためのツールで、
+SassやMarkdown等のテンプレートを元に、HTMLやCSS、Javascriptといったファイルを生成してくれる。
+Middlemanは初期設定と学習に少し手間が掛かるけど、数時間程度だし、結局自分が好きなように設定出来るのが良い。
+データが全て手元にあるということに安心感がある。静的ファイルを返すだけなので応答速度は速い。
+手元で確認するためのWebサーバが同梱されていて、Live-Reload機能も付いているので非常に便利。
+Previewボタンをポチポチ押して確認しなくて良い。
+使う前に想像していたほど大きなシステムでは無かった。
+Webアプリでも部分的に静的ファイルに置き換えられる箇所は多いので、そういう場面で簡単に適用出来ると良いかもしれない。
+
+## 公開作業の単純化
+![](/images/2013-11-10-hello-world/build-pipeline.png)
+ブログは書きたいときにすぐ書けるようにしておかないと途端に腐るので、
+GitHubとTravisCIとDropboxを使って、エディタで記事を書いてフォルダに入れるだけで公開されるようにした。
+GitHubでは、username.github.ioレポジトリのmasterブランチにファイルを置くと、
+http://username.github.io からファイルを配信してくれる。
+Markdownで書いた記事をMiddlemanでHTMLに変換し、これをmasterブランチにpushする。
+Middlemanにはブログを作るための拡張機能があるので、これを使えば簡単に雛形を生成できる。
+静的ファイルの生成を自分で行うのは面倒なので、これはTravis-CIに任せる。
+GitHubのPersonal Access Tokenを利用すれば、Travis-CIからGitHubにpushできる。
+不具合があってbuildにfailするとTravisがメールを投げてくれるので、所謂一般的なCIの役割も兼ねていて便利。
+記事編集のたびにGitHubにPushするのも面倒なので、レポジトリをDropbox内に置き、
+VPSで動かしているプログラムにDropboxを監視させ、代わりにGitHubにPushさせている。
+この辺VPSとか使わずにもう少し便利な仕組みがあると良いと思う。
+このブログのソースコードは[ここ](https://github.com/r7kamura/r7kamura.github.io/)に置いてある。
+</content>
+  </entry>
+</feed>
